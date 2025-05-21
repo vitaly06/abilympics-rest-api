@@ -12,7 +12,9 @@ import { RegisterAdminDto } from './dto/register-admin.dto';
 import { Request, Response } from 'express';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
+import { ApiOperation, ApiTags } from '@nestjs/swagger';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -21,18 +23,20 @@ export class AuthController {
   ) {}
 
   @Post('register')
+  @ApiOperation({ summary: 'Регистрация админа' })
   async register(@Body() dto: RegisterAdminDto) {
     return this.authService.register(dto);
   }
 
   @Post('login')
+  @ApiOperation({ summary: 'Авторизация админа' })
   async login(
     @Body() dto: RegisterAdminDto,
     @Res({ passthrough: true }) res: Response,
   ) {
     const result = await this.authService.login(dto);
     res.cookie('access_token', result.access_token, {
-      httpOnly: false,
+      httpOnly: true,
       secure: false,
       maxAge: 15 * 60 * 1000,
       sameSite: 'strict',
@@ -47,6 +51,7 @@ export class AuthController {
   }
 
   @Get('logout')
+  @ApiOperation({ summary: 'Выход из системы' })
   @UseGuards(JwtAuthGuard)
   async logout(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
     const refreshToken = req.cookies['refresh_token'];
@@ -67,6 +72,9 @@ export class AuthController {
 
   @Get('refresh')
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({
+    summary: 'Запрос на обновление access_token и refresh_token',
+  })
   async refresh(
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
@@ -76,7 +84,7 @@ export class AuthController {
     const result = await this.authService.refresh(refreshToken);
 
     res.cookie('access_token', result.access_token, {
-      httpOnly: false,
+      httpOnly: true,
       secure: false,
       maxAge: 15 * 60 * 1000,
       sameSite: 'strict',
